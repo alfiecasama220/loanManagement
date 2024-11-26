@@ -1,0 +1,59 @@
+<?php
+// Include TCPDF library
+require_once('tcpdf/tcpdf.php');
+
+// Include database connection file
+include 'db_connect.php';
+
+// Check if loan ID is provided in the URL parameter
+if(isset($_GET['id'])) {
+    // Retrieve loan ID from URL parameter
+    $loan_id = $_GET['id'];
+    
+    // Fetch data from the database based on the loan ID
+    $stmt = $conn->prepare("SELECT * FROM loan_list WHERE id = ?");
+    $stmt->bind_param("i", $loan_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    // Check if data is found
+    if($result->num_rows > 0) {
+        // Fetch loan details
+        $row = $result->fetch_assoc();
+        
+        // Create new PDF document
+        $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        
+        // Set document information
+        $pdf->SetCreator(PDF_CREATOR);
+        $pdf->SetTitle('Statement of Account');
+        
+        // Add a page
+        $pdf->AddPage();
+        
+        // Set font
+        $pdf->SetFont('dejavusans', '', 12);
+        
+        // Add content to the PDF
+        $content = "Loan ID: " . $row['id'] . "\n";
+        $content .= "Borrower: " . $row['borrower_name'] . "\n";
+        // Add more details as needed
+        
+        // Output the content to the PDF
+        $pdf->Write(0, $content);
+        
+        // Close and output PDF document
+        $pdf->Output('statement_of_account_' . $loan_id . '.pdf', 'D');
+        
+        // Redirect back to loans.php after downloading
+        header('Location: loans.php');
+        exit;
+    } else {
+        // Loan not found, redirect or display an error message
+        echo "Loan not found.";
+    }
+} else {
+    // Loan ID not provided in URL parameter, redirect or display an error message
+    echo "Loan ID not provided.";
+}
+?>
